@@ -7,7 +7,7 @@ def check_sample_rates(folder_path):
     Prints mismatches and returns True if all are identical.
     """
     sample_rates = {}
-    
+
     for root, _, files in os.walk(folder_path):
         for fname in files:
             if fname.lower().endswith(".wav"):
@@ -27,8 +27,8 @@ def check_sample_rates(folder_path):
     # Get all unique sample rates
     unique_rates = set(sample_rates.values())
     print("\n--- Sample Rate Summary ---")
-    for f, sr in sample_rates.items():
-        print(f"{f}: {sr} Hz")
+    #for f, sr in sample_rates.items():
+        #print(f"{f}: {sr} Hz")
 
     if len(unique_rates) == 1:
         sampling_rate = unique_rates.pop()
@@ -44,5 +44,6 @@ if __name__ == "__main__":
     folder_fake = "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/Benita_F008_Fake"   # <-- change to your folder pat
     a,b = check_sample_rates(folder_true)
     c,d = check_sample_rates(folder_fake)
-    
+
     print(a,b,c,d)
+
