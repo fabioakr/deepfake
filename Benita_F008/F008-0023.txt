@@ -1,1 +1,0 @@
-os problemas surgem nas importações diretas via catálogos por exemplo
