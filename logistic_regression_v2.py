@@ -18,8 +18,34 @@ folder_fake = "/Users/fabioakira/Downloads/fakes"
 # File to test after training
 test_audio_path = "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/audio.wav"  # change to your test file
 
+def _process_folder(root_folder, label):
+    """
+    Função auxiliar para caminhar recursivamente por uma pasta,
+    encontrar arquivos .wav e extrair features.
+    """
+    features_list = []
+    labels_list = []
+    
+    # os.walk é o segredo: ele desce por todas as subpastas
+    for dirpath, dirnames, filenames in os.walk(root_folder):
+        for filename in filenames:
+            if filename.lower().endswith(".wav"):
+                # Constrói o caminho completo do arquivo
+                filepath = os.path.join(dirpath, filename)
+                try:
+                    # Extrai as features do arquivo
+                    features = extract_features(filepath)
+                    features_list.append(features)
+                    labels_list.append(label)
+                except Exception as e:
+                    # Adiciona um try/except para o caso de um áudio falhar
+                    print(f"⚠️ Erro ao processar o arquivo {filepath}: {e}")
+                    
+    return features_list, labels_list
+
 # --- Feature extraction ---
-def extract_features(filepath, n_mfcc=13):
+def extract_features(filepath, n_mfcc=13): ## alterar aqui!!!!!
+    ## PRECISA COLOCAR AQUI PARA 16 kHz
     """Extract MFCC mean and std features for one audio file."""
     y, sr = librosa.load(filepath, sr=None)
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
@@ -27,20 +53,28 @@ def extract_features(filepath, n_mfcc=13):
     feat_std = np.std(mfcc, axis=1)
     return np.concatenate([feat_mean, feat_std])  # shape (26,)
 
-# --- Load dataset ---
 def load_dataset(real_folder, fake_folder):
-    X, y = [], []
-    for f in os.listdir(real_folder):
-        if f.lower().endswith(".wav"):
-            X.append(extract_features(os.path.join(real_folder, f)))
-            y.append(0)
-    for f in os.listdir(fake_folder):
-        if f.lower().endswith(".wav"):
-            X.append(extract_features(os.path.join(fake_folder, f)))
-            y.append(1)
-    X = np.array(X)
-    y = np.array(y)
-    print(f"✅ Loaded {len(X)} files ({sum(y==0)} real, {sum(y==1)} fake)")
+    """
+    Carrega o dataset usando a função auxiliar _process_folder
+    para lidar com as subpastas.
+    """
+    print(f"Procurando áudios reais em: {real_folder}")
+    X_real, y_real = _process_folder(real_folder, 0) # Label 0 = Real
+    
+    print(f"\nProcurando áudios falsos em: {fake_folder}")
+    X_fake, y_fake = _process_folder(fake_folder, 1) # Label 1 = Fake
+
+    # Combina as listas de áudios reais e falsos
+    X = np.array(X_real + X_fake)
+    y = np.array(y_real + y_fake)
+    
+    # Verifica se algum arquivo foi carregado
+    if len(X) == 0:
+        print("\n❌ ERRO: Nenhum arquivo .wav foi encontrado!")
+        print("Verifique os caminhos 'folder_true' e 'folder_fake' no seu script.")
+        return np.array([]), np.array([])
+
+    print(f"\n✅ Carregados {len(X)} arquivos ({len(y_real)} reais, {len(y_fake)} falsos)")
     return X, y
 
 # --- Train model ---

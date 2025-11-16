@@ -3,8 +3,8 @@ Script para analisar as propriedades da base de dados
 a ser utilizada para treinamento neste projeto de TCC.
 
 Alunos:
-Fábio Akira Yonamine
-Monique Menezes XXXX
+Fábio Akira Yonamine - 11805398
+Monique Menezes XXXX - YYYYYYY
 """
 
 import os
@@ -14,6 +14,9 @@ import numpy as np
 # Localização das pastas, com áudios reais / gerados artificialmente
 folder_true = "/Users/fabioakira/Downloads/reais"
 folder_fake = "/Users/fabioakira/Downloads/fakes"
+
+#folder_true = "/Volumes/Transcend/reais"
+#folder_fake = "/Volumes/Transcend/fakes"
 
 # Função auxiliar para imprimir estatísticas
 def print_summary_stats(label, durations_sec, sizes_bytes):
