@@ -20,17 +20,16 @@ folder_train_fake = "/Users/fabioakira/Downloads/fakes_train"
 folder_test_true = "/Users/fabioakira/Downloads/reais_test"
 folder_test_fake = "/Users/fabioakira/Downloads/fakes_test"
 
-# --- Parâmetros de Áudio ---
-N_MFCC = 40       # Número de coeficientes MFCC
-TARGET_SR = 16000 # Sample rate alvo (16000 Hz)
-
-# --- Parâmetros de ML (Ajuste para KNN) ---
-N_VIZINHOS = 5    # Número de vizinhos (K) para o KNN
-
+# Pasta para salvar resultados
 SAVE_FOLDER = "knn_results"
 os.makedirs(SAVE_FOLDER, exist_ok=True)
 
-# --- Funções Auxiliares ---
+# Parâmetros de ML (Ajuste para KNN)
+N_VIZINHOS = 5    # Número de vizinhos (K) para o KNN
+
+# Parâmetros de Áudio
+N_MFCC = 40       # Número de coeficientes MFCC
+TARGET_SR = 16000 # Sample rate alvo (16000 Hz)
 
 def _process_folder(root_folder, label):
     """
@@ -82,9 +81,8 @@ def load_manual_dataset(real_train, fake_train, real_test, fake_test):
     print(f"\nTreino: {len(X_train)} arquivos | Teste: {len(X_test)} arquivos")
     return X_train, y_train, X_test, y_test
 
-# --- Treinamento do Modelo (KNN) ---
 def train_and_save_model():
-    start_time = time.time() 
+    start_time = time.time()
 
     X_train, y_train, X_test, y_test = load_manual_dataset(
         folder_train_true, folder_train_fake,
@@ -95,16 +93,16 @@ def train_and_save_model():
         print("\nERRO: Nenhum arquivo .wav foi encontrado nos conjuntos de treino ou teste!")
         return 
 
-    # Normalização é crucial para KNN
+    # Normalização do KNN
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    # Treinamento do modelo KNN
+    # Treinamento do KNN
     clf = KNeighborsClassifier(n_neighbors=N_VIZINHOS)
     clf.fit(X_train_scaled, y_train)
 
-    # Avaliação
+    # Roda a avaliação com amostras de teste
     y_prob = clf.predict_proba(X_test_scaled)[:, 1]
     y_pred = (y_prob >= 0.5).astype(int)
 
@@ -119,9 +117,9 @@ def train_and_save_model():
     end_time = time.time()
     elapsed_time_sec = end_time - start_time
 
-    # CÁLCULO E FORMATAÇÃO DO TEMPO
+    # Tempo gasto para o script rodar
     minutes = int(elapsed_time_sec // 60)
-    seconds = int(elapsed_time_sec % 60)    
+    seconds = int(elapsed_time_sec % 60)
     time_display = f"{minutes} min {seconds} seg" if minutes > 0 else f"{elapsed_time_sec:.2f} seg"
 
     print("\n=== RESULTADOS DO TREINO (KNN) ===")
@@ -136,45 +134,34 @@ def train_and_save_model():
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred, target_names=["Real", "Fake"]))
 
-    # --- Gráfico da Matriz de Confusão ---
-    #plt.figure(figsize=(6,5))
-    #disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Real", "Fake"])
-    #disp.plot(values_format='d')
-    #plt.title("Matriz de Confusão - KNN")
-    #plt.savefig(os.path.join(SAVE_FOLDER, "matriz_confusao_knn.png"), dpi=300)
-    #print("💾 Matriz de confusão salva como matriz_confusao_knn.png")
-    #plt.show()
-
-    # 7. Matrix de Confusão
-    # ================================
-    #cm = confusion_matrix(y_test, y_pred)
+    # Gera o gráfico: matriz de confusão
     plt.figure(figsize=(5,4))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
         xticklabels=["Real","Fake"],
         yticklabels=["Real","Fake"])
-    plt.title("Confusion Matrix - SVM MFCC")
+    plt.title("Confusion Matrix - KNN, MFCC")
     plt.xlabel("Predicted")
     plt.ylabel("True")
     plt.savefig(os.path.join(SAVE_FOLDER, "matriz_confusao_knn.png"), dpi=300)
     print("💾 Matriz de confusão salva como matriz_confusao_knn.png")
     plt.show()
 
-    # --- Curva ROC ---
+    # Gera o gráfico: curva ROC
     plt.figure(figsize=(6,5))
     ax = plt.gca()
-    ax.plot([0,1], [0,1], "--", color="gray")
-    RocCurveDisplay.from_predictions(y_test, y_prob)
+    RocCurveDisplay.from_predictions(y_test, y_prob, ax=ax)
+    ax.plot([0,1], [0,1], "--", color="gray", label="Aleatório (AUC=0.5)")
     plt.title("Curva ROC - KNN")
     plt.savefig(os.path.join(SAVE_FOLDER, "curva_roc_knn.png"), dpi=300)
     print("💾 Curva ROC salva como curva_roc_knn.png")
     plt.show()
 
-    # Salvar modelo + scaler
+    # Salva modelo + scaler em arquivos .pkl
     joblib.dump(clf, os.path.join(SAVE_FOLDER, "knn_model.pkl"))
     joblib.dump(scaler, os.path.join(SAVE_FOLDER, "scaler_knn.pkl"))
-    print("\n💾 Modelo KNN salvo como 'knn_model.pkl' e scaler 'scaler_knn.pkl'.")
+    print("💾 Modelo KNN salvo como 'knn_model.pkl' e scaler 'scaler_knn.pkl'.")
 
-    # --- Visualização ---
+    # Visualização da distribuição de probabilidades
     plt.figure(figsize=(8, 5))
     plt.hist(y_prob[y_test == 0], bins=15, alpha=0.6, label="Real (0)")
     plt.hist(y_prob[y_test == 1], bins=15, alpha=0.6, label="Fake (1)")
@@ -187,6 +174,6 @@ def train_and_save_model():
     plt.tight_layout()
     plt.show()
 
-# --- Execução ---
+# Execução (main)
 if __name__ == "__main__":
     train_and_save_model()
