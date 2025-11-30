@@ -7,7 +7,6 @@ import joblib
 
 # Importações específicas do KNN
 from sklearn.neighbors import KNeighborsClassifier 
-#from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
 from sklearn.metrics import ConfusionMatrixDisplay, RocCurveDisplay
@@ -42,6 +41,7 @@ def _process_folder(root_folder, label):
         for filename in filenames:
             if filename.lower().endswith(".wav"):
                 filepath = os.path.join(dirpath, filename)
+                print(f"Abrindo arquivo: {filepath}")
                 try:
                     features = extract_features(filepath) 
                     features_list.append(features)
@@ -62,11 +62,11 @@ def extract_features(filepath, n_mfcc=N_MFCC):
     return np.concatenate([feat_mean, feat_std])
 
 def load_manual_dataset(real_train, fake_train, real_test, fake_test):
-    print("Carregando dados de TREINO...")
+    print("Carregando dados de treino...")
     X_rt, y_rt = _process_folder(real_train, 0)
     X_ft, y_ft = _process_folder(fake_train, 1)
 
-    print("\nCarregando dados de TESTE...")
+    print("\nCarregando dados de teste...")
     X_rv, y_rv = _process_folder(real_test, 0)
     X_fv, y_fv = _process_folder(fake_test, 1)
 
@@ -89,7 +89,7 @@ def train_and_save_model():
     )
 
     if len(X_train) == 0 or len(X_test) == 0:
-        print("\n❌ ERRO: Nenhum arquivo .wav foi encontrado nos conjuntos de treino ou teste!")
+        print("\nERRO: Nenhum arquivo .wav foi encontrado nos conjuntos de treino ou teste!")
         return 
 
     # Normalização é crucial para KNN
@@ -121,7 +121,7 @@ def train_and_save_model():
     print(f"Usando {N_MFCC} MFCCs e K={N_VIZINHOS}")
     print(f"Accuracy: {acc:.3f}")
     print(f"AUC: {auc:.3f}")
-    print(f"⏱️ Tempo Total: {time_display}")
+    print(f"Tempo Total: {time_display}")
     print("Matriz de Confusão:\n", cm)
 
     # --- Gráfico da Matriz de Confusão ---
@@ -130,7 +130,7 @@ def train_and_save_model():
     disp.plot(values_format='d')
     plt.title("Matriz de Confusão - KNN")
     plt.savefig(os.path.join(SAVE_FOLDER, "matriz_confusao_knn.png"), dpi=300)
-    print("🖼️ Matriz de confusão salva como matriz_confusao_knn.png")
+    print("💾 Matriz de confusão salva como matriz_confusao_knn.png")
     plt.show()
 
     # --- Curva ROC ---
@@ -138,7 +138,7 @@ def train_and_save_model():
     RocCurveDisplay.from_predictions(y_test, y_prob)
     plt.title("Curva ROC - KNN")
     plt.savefig(os.path.join(SAVE_FOLDER, "curva_roc_knn.png"), dpi=300)
-    print("🖼️ Curva ROC salva como curva_roc_knn.png")
+    print("💾 Curva ROC salva como curva_roc_knn.png")
     plt.show()
 
     # Salvar modelo + scaler
