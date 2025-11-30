@@ -10,6 +10,9 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
 from sklearn.metrics import ConfusionMatrixDisplay, RocCurveDisplay
+from sklearn.metrics import precision_score, recall_score, f1_score
+from sklearn.metrics import classification_report
+import seaborn as sns
 
 # --- Configurações ---
 folder_train_true = "/Users/fabioakira/Downloads/reais_train"
@@ -109,6 +112,10 @@ def train_and_save_model():
     auc = roc_auc_score(y_test, y_prob)
     cm = confusion_matrix(y_test, y_pred)
 
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+
     end_time = time.time()
     elapsed_time_sec = end_time - start_time
 
@@ -121,20 +128,41 @@ def train_and_save_model():
     print(f"Usando {N_MFCC} MFCCs e K={N_VIZINHOS}")
     print(f"Accuracy: {acc:.3f}")
     print(f"AUC: {auc:.3f}")
+    print(f"Precision:  {precision:.3f}")
+    print(f"Recall:     {recall:.3f}")
+    print(f"F1-score:   {f1:.3f}")
     print(f"Tempo Total: {time_display}")
     print("Matriz de Confusão:\n", cm)
+    print("\nClassification Report:")
+    print(classification_report(y_test, y_pred, target_names=["Real", "Fake"]))
 
     # --- Gráfico da Matriz de Confusão ---
-    plt.figure(figsize=(6,5))
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Real", "Fake"])
-    disp.plot(values_format='d')
-    plt.title("Matriz de Confusão - KNN")
+    #plt.figure(figsize=(6,5))
+    #disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Real", "Fake"])
+    #disp.plot(values_format='d')
+    #plt.title("Matriz de Confusão - KNN")
+    #plt.savefig(os.path.join(SAVE_FOLDER, "matriz_confusao_knn.png"), dpi=300)
+    #print("💾 Matriz de confusão salva como matriz_confusao_knn.png")
+    #plt.show()
+
+    # 7. Matrix de Confusão
+    # ================================
+    #cm = confusion_matrix(y_test, y_pred)
+    plt.figure(figsize=(5,4))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+        xticklabels=["Real","Fake"],
+        yticklabels=["Real","Fake"])
+    plt.title("Confusion Matrix - SVM MFCC")
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
     plt.savefig(os.path.join(SAVE_FOLDER, "matriz_confusao_knn.png"), dpi=300)
     print("💾 Matriz de confusão salva como matriz_confusao_knn.png")
     plt.show()
 
     # --- Curva ROC ---
     plt.figure(figsize=(6,5))
+    ax = plt.gca()
+    ax.plot([0,1], [0,1], "--", color="gray")
     RocCurveDisplay.from_predictions(y_test, y_prob)
     plt.title("Curva ROC - KNN")
     plt.savefig(os.path.join(SAVE_FOLDER, "curva_roc_knn.png"), dpi=300)
