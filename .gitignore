@@ -1,0 +1,8 @@
+Ambientes Virtuais
+
+.venv/ venv/ env/
+
+Arquivos de metadados
+
+pycache/
+*.pyc
