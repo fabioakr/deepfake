@@ -1,3 +1,10 @@
+"""
+Esta versão utiliza LogRes com 20% das amostras de teste, para se adequar ao CNN e SVM.
+
+As funções auxiliares load_audio(), linear_filter_banks() e extract_lfcc() são exclusivas
+para a extração de LFCC.
+"""
+
 import os
 import time  # Módulo para medir o tempo
 import numpy as np
@@ -55,7 +62,7 @@ def _process_folder(root_folder, label):
                 try:
                     # Extrai as features do arquivo
                     # A função extract_features usará os valores globais N_MFCC e TARGET_SR
-                    features = extract_features_mfcc(filepath)
+                    features = extract_mfcc(filepath)
                     features_list.append(features)
                     labels_list.append(label)
                 except Exception as e:
@@ -65,7 +72,7 @@ def _process_folder(root_folder, label):
     return features_list, labels_list
 
 # --- Extração de Features ---
-def extract_features_mfcc(filepath, n_mfcc=N_MFCC):
+def extract_mfcc(filepath, n_mfcc=N_MFCC):
     """
     Extrai a média e o desvio padrão dos MFCCs para um arquivo de áudio.
     """
@@ -80,6 +87,67 @@ def extract_features_mfcc(filepath, n_mfcc=N_MFCC):
     feat_std = np.std(mfcc, axis=1)
 
     # A forma final será (2 * n_mfcc,)
+    return np.concatenate([feat_mean, feat_std])
+
+# ---------------------------------------
+# 2. Função para extrair LFCC completo
+# ---------------------------------------
+
+def load_audio(path, sr=TARGET_SR):
+    wav, fs = sf.read(path)
+    if wav.ndim > 1:
+        wav = np.mean(wav, axis=1)
+    if fs != sr:
+        wav = librosa.resample(wav.astype(np.float32), orig_sr=fs, target_sr=sr)
+    return wav.astype(np.float32)
+
+def linear_filter_banks(sr, n_fft, n_filters, fmin=0, fmax=None):
+    if fmax is None:
+        fmax = sr / 2
+
+    # Frequências reais geradas pela FFT
+    freqs = np.linspace(0, sr / 2, 1 + n_fft // 2)
+
+    # Bordas das bandas lineares
+    edges = np.linspace(fmin, fmax, n_filters + 2)
+
+    fbanks = np.zeros((n_filters, len(freqs)))
+
+    for i in range(n_filters):
+        left = edges[i]
+        center = edges[i + 1]
+        right = edges[i + 2]
+
+        # Subida triangular
+        left_slope = (freqs - left) / (center - left)
+        # Descida triangular
+        right_slope = (right - freqs) / (right - center)
+
+        fbanks[i] = np.maximum(0, np.minimum(left_slope, right_slope))
+
+    return fbanks
+
+def extract_lfcc(path, sr=TARGET_SR, n_lfcc=N_MFCC): ### FUSAO DE EXTRACT_LFCC E EXTRACT_LFCC_MEAN
+    wave = load_audio(path)
+
+    # STFT → power spectrum
+    S = np.abs(librosa.stft(wave, n_fft=512, hop_length=160, win_length=400))**2
+
+    # Filtros triangulares lineares
+    fbanks = linear_filter_banks(sr=sr, n_fft=512, n_filters=n_lfcc)
+
+    # Aplica os filtros → espectro filtrado
+    filtered = np.dot(fbanks, S)
+
+    # log-energy
+    logS = np.log(filtered + 1e-10)
+
+    # Cepstrum via DCT
+    lfcc = scipy.fft.dct(logS, axis=0, norm="ortho")
+
+    feat_mean = np.mean(lfcc, axis=1)
+    feat_std = np.std(lfcc, axis=1)
+
     return np.concatenate([feat_mean, feat_std])
 
 def load_dataset(real_folder, fake_folder):

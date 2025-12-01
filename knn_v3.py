@@ -1,6 +1,8 @@
 """
 Esta versão utiliza KNN com 20% das amostras de teste, para se adequar ao CNN e SVM.
 
+As funções auxiliares load_audio(), linear_filter_banks() e extract_lfcc() são exclusivas
+para a extração de LFCC.
 """
 
 import os
