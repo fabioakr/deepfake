@@ -173,42 +173,7 @@ def train_and_save_model():
     plt.tight_layout()
     plt.show()
 
-# --- Teste de novo arquivo ---
-def classify_new_audio(audio_path):
-    print("\n--- CLASSIFICANDO NOVO ARQUIVO ---")
-    if not os.path.exists("logreg_model.pkl") or not os.path.exists("scaler.pkl"):
-        print("⚠️ Você precisa treinar o modelo primeiro! Execute o script sem comentar 'train_and_save_model()'.")
-        return
-
-    if not os.path.exists(audio_path):
-        print(f"⚠️ Arquivo de teste não encontrado: {audio_path}")
-        return
-
-    clf = joblib.load("logreg_model.pkl")
-    scaler = joblib.load("scaler.pkl")
-
-    try:
-        # Extrai features usando as mesmas configurações (N_MFCC, TARGET_SR)
-        features = extract_features(audio_path).reshape(1, -1)
-    except Exception as e:
-        print(f"Erro ao processar o arquivo de teste {audio_path}: {e}")
-        return
-
-    # Normaliza as features com o scaler salvo
-    features_scaled = scaler.transform(features)
-
-    # Faz a predição
-    prob = clf.predict_proba(features_scaled)[0, 1]
-    label = "FAKE" if prob >= 0.5 else "REAL"
-
-    print(f"\n🔎 Arquivo: {os.path.basename(audio_path)}")
-    print(f"→ Veredito: {label}")
-    print(f"→ Probabilidade de ser FAKE: {prob:.3f}")
-
 # --- Execução ---
 if __name__ == "__main__":
     # 1. Treina o modelo
     train_and_save_model()
-
-    # 2. Classifica o arquivo de teste
-    classify_new_audio(test_audio_path)
