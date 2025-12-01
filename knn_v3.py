@@ -57,7 +57,7 @@ def _process_folder(root_folder, label):
     for filepath in file_list:
         print(f"Abrindo arquivo: {filepath}")
         try:
-            features = extract_features(filepath)
+            features = extract_mfcc_features(filepath)
             features_list.append(features)
             labels_list.append(label)
         except Exception as e:
@@ -65,7 +65,7 @@ def _process_folder(root_folder, label):
 
     return features_list, labels_list
 
-def extract_features(filepath, n_mfcc=N_MFCC):
+def extract_mfcc_features(filepath, n_mfcc=N_MFCC):
     """
     Extrai a média e o desvio padrão dos MFCCs.
     """
