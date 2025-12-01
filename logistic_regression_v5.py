@@ -152,6 +152,48 @@ def extract_lfcc(path, sr=TARGET_SR, n_lfcc=N_MFCC): ### FUSAO DE EXTRACT_LFCC E
 
     return np.concatenate([feat_mean, feat_std])
 
+# ============================================================
+# 1. Função para extrair CQCC
+# ============================================================
+def extract_cqcc(path, sr=TARGET_SR, n_cqcc=N_MFCC, bins_per_octave=96):
+    """
+    CQCC = DCT(log(CQT^2))
+    CQT → log-power → DCT → coeficientes
+    """
+    wave = load_audio(path)
+
+    # 1) CQT complex
+    CQT = librosa.cqt(
+        wave,
+        sr=sr,
+        hop_length=128,
+        fmin=20,
+        n_bins=8 * bins_per_octave,
+        bins_per_octave=bins_per_octave,
+        pad_mode="reflect"     # evita janelas curtas
+    )
+
+    # 2) Espectro de potência
+    power = np.abs(CQT)**2
+
+    # 3) Log-power
+    log_power = np.log(power + 1e-12)
+
+    # 4) DCT → cepstrum
+    cqcc = scipy.fft.dct(log_power, axis=0, norm='ortho')
+
+    # 5) Mantém primeiros coeficientes
+    cqcc = cqcc[:n_cqcc, :]
+
+    feat_mean = np.mean(cqcc, axis=1)
+    feat_std = np.std(cqcc, axis=1)
+
+    return np.concatenate([feat_mean, feat_std])
+
+#def extract_cqcc_mean(wave, sr=16000, n_cqcc=40):
+#    cq = extract_cqcc(wave, sr=sr, n_cqcc=n_cqcc)
+#    return np.mean(cq, axis=1)
+
 def load_dataset(real_folder, fake_folder):
     """
     Carrega o dataset usando a função auxiliar _process_folder
