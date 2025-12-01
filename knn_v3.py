@@ -19,6 +19,8 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 from sklearn.metrics import classification_report
 import seaborn as sns
 from sklearn.model_selection import train_test_split
+import scipy.fft
+import soundfile as sf
 
 # --- Configurações ---
 folder_train_true = "/Users/fabioakira/Downloads/reais_train"
@@ -28,7 +30,7 @@ folder_test_fake = "/Users/fabioakira/Downloads/fakes_test"
 
 # Pasta para salvar resultados
 SAVE_FOLDER = "knn_results"
-os.makedirs(SAVE_FOLDER, exist_ok=True)
+#os.makedirs(SAVE_FOLDER, exist_ok=True)
 
 # Parâmetros de ML (Ajuste para KNN)
 N_VIZINHOS = 5    # Número de vizinhos (K) para o KNN
@@ -57,7 +59,7 @@ def _process_folder(root_folder, label):
     for filepath in file_list:
         print(f"Abrindo arquivo: {filepath}")
         try:
-            features = extract_mfcc_features(filepath)
+            features = extract_mfcc(filepath) ## MUDE AQUI ENTRE LFCC E MFCC
             features_list.append(features)
             labels_list.append(label)
         except Exception as e:
@@ -65,7 +67,7 @@ def _process_folder(root_folder, label):
 
     return features_list, labels_list
 
-def extract_mfcc_features(filepath, n_mfcc=N_MFCC):
+def extract_mfcc(filepath, n_mfcc=N_MFCC):
     """
     Extrai a média e o desvio padrão dos MFCCs.
     """
@@ -74,6 +76,68 @@ def extract_mfcc_features(filepath, n_mfcc=N_MFCC):
     feat_mean = np.mean(mfcc, axis=1)
     feat_std = np.std(mfcc, axis=1)
     return np.concatenate([feat_mean, feat_std])
+
+# ---------------------------------------
+# 2. Função para extrair LFCC completo
+# ---------------------------------------
+
+def load_audio(path, sr=TARGET_SR):
+    wav, fs = sf.read(path)
+    if wav.ndim > 1:
+        wav = np.mean(wav, axis=1)
+    if fs != sr:
+        wav = librosa.resample(wav.astype(np.float32), orig_sr=fs, target_sr=sr)
+    return wav.astype(np.float32)
+
+def linear_filter_banks(sr, n_fft, n_filters, fmin=0, fmax=None):
+    if fmax is None:
+        fmax = sr / 2
+
+    # Frequências reais geradas pela FFT
+    freqs = np.linspace(0, sr / 2, 1 + n_fft // 2)
+
+    # Bordas das bandas lineares
+    edges = np.linspace(fmin, fmax, n_filters + 2)
+
+    fbanks = np.zeros((n_filters, len(freqs)))
+
+    for i in range(n_filters):
+        left = edges[i]
+        center = edges[i + 1]
+        right = edges[i + 2]
+
+        # Subida triangular
+        left_slope = (freqs - left) / (center - left)
+        # Descida triangular
+        right_slope = (right - freqs) / (right - center)
+
+        fbanks[i] = np.maximum(0, np.minimum(left_slope, right_slope))
+
+    return fbanks
+
+def extract_lfcc(path, sr=TARGET_SR, n_lfcc=N_MFCC): ### FUSAO DE EXTRACT_LFCC E EXTRACT_LFCC_MEAN
+    wave = load_audio(path)
+
+    # STFT → power spectrum
+    S = np.abs(librosa.stft(wave, n_fft=512, hop_length=160, win_length=400))**2
+
+    # Filtros triangulares lineares
+    fbanks = linear_filter_banks(sr=sr, n_fft=512, n_filters=n_lfcc)
+
+    # Aplica os filtros → espectro filtrado
+    filtered = np.dot(fbanks, S)
+
+    # log-energy
+    logS = np.log(filtered + 1e-10)
+
+    # Cepstrum via DCT
+    lfcc = scipy.fft.dct(logS, axis=0, norm="ortho")
+
+    feat_mean = np.mean(lfcc, axis=1)
+    feat_std = np.std(lfcc, axis=1)
+
+    return np.concatenate([feat_mean, feat_std])
+
 
 def load_manual_dataset(real_train, fake_train, real_test, fake_test):
     print("Carregando dados de treino...")
@@ -113,6 +177,7 @@ def load_manual_dataset(real_train, fake_train, real_test, fake_test):
 
 def train_and_save_model():
     start_time = time.time()
+    os.makedirs(SAVE_FOLDER, exist_ok=True) # Precisa estar aqui, para criar a pasta corretamente
 
     X_train, y_train, X_test, y_test = load_manual_dataset(
         folder_train_true, folder_train_fake,
@@ -181,7 +246,9 @@ def train_and_save_model():
     ax = plt.gca()
     RocCurveDisplay.from_predictions(y_test, y_prob, ax=ax)
     ax.plot([0,1], [0,1], "--", color="gray", label="Aleatório (AUC=0.5)")
-    plt.title("Curva ROC - KNN")
+    plt.title("Curva ROC - KNN, MFCC")
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
     plt.savefig(os.path.join(SAVE_FOLDER, "curva_roc_knn.png"), dpi=300)
     print("💾 Curva ROC salva como curva_roc_knn.png")
     plt.show()
