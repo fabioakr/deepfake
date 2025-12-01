@@ -64,7 +64,7 @@ def _process_folder(root_folder, label):
                 try:
                     # Extrai as features do arquivo
                     # A função extract_features usará os valores globais N_MFCC e TARGET_SR
-                    features = extract_mfcc(filepath) ## MUDE AQUI ENTRE LFCC E MFCC
+                    features = extract_mfcc(filepath) ## MUDE AQUI ENTRE LFCC E MFCC E CQCC
                     features_list.append(features)
                     labels_list.append(label)
                 except Exception as e:
@@ -102,6 +102,10 @@ def load_audio(path, sr=TARGET_SR):
     if fs != sr:
         wav = librosa.resample(wav.astype(np.float32), orig_sr=fs, target_sr=sr)
     return wav.astype(np.float32)
+
+def load_audio2(path, sr=TARGET_SR):
+    y, _ = librosa.load(path, sr=sr)
+    return y
 
 def linear_filter_banks(sr, n_fft, n_filters, fmin=0, fmax=None):
     if fmax is None:
@@ -311,7 +315,7 @@ def train_and_save_model():
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
         xticklabels=["Real","Fake"],
         yticklabels=["Real","Fake"])
-    plt.title("Confusion Matrix - LogReg, MFCC")
+    plt.title(f"Confusion Matrix - LogReg, MFCC={N_MFCC}")
     plt.xlabel("Predicted")
     plt.ylabel("True")
     plt.savefig(os.path.join(SAVE_FOLDER, "matriz_confusao_logreg.png"), dpi=300)
@@ -323,7 +327,7 @@ def train_and_save_model():
     ax = plt.gca()
     RocCurveDisplay.from_predictions(y_test, y_prob, ax=ax)
     ax.plot([0,1], [0,1], "--", color="gray", label="Aleatório (AUC=0.5)")
-    plt.title("Curva ROC - LogReg, MFCC")
+    plt.title(f"Curva ROC - LogReg, MFCC={N_MFCC}")
     plt.xlabel("False Positive Rate")
     plt.ylabel("True Positive Rate")
     plt.savefig(os.path.join(SAVE_FOLDER, "curva_roc_logreg.png"), dpi=300)
