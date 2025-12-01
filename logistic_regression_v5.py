@@ -15,8 +15,6 @@ import seaborn as sns
 from sklearn.metrics import ConfusionMatrixDisplay, RocCurveDisplay
 
 # --- Configurações ---
-#folder_true = "/Users/fabioakira/Downloads/reais"
-#folder_fake = "/Users/fabioakira/Downloads/fakes"
 folder_train_true = "/Users/fabioakira/Downloads/reais_train"
 folder_train_fake = "/Users/fabioakira/Downloads/fakes_train"
 folder_test_true = "/Users/fabioakira/Downloads/reais_test"
@@ -111,7 +109,7 @@ def load_dataset(real_folder, fake_folder):
     return X, y
 
 def load_train_dataset(real_folder, fake_folder):
-    print("\n=== Carregando dados de TREINO ===")
+    print("\n=== Carregando dados de treino ===")
     X_real, y_real = _process_folder(real_folder, 0)
     X_fake, y_fake = _process_folder(fake_folder, 1)
 
@@ -122,7 +120,7 @@ def load_train_dataset(real_folder, fake_folder):
     return shuffle(X, y, random_state=42)
 
 def load_test_dataset(real_folder, fake_folder, fraction=0.2):
-    print("\n=== Carregando dados de TESTE ===")
+    print("\n=== Carregando dados de teste ===")
     X_real, y_real = _process_folder(real_folder, 0)
     X_fake, y_fake = _process_folder(fake_folder, 1)
 
@@ -144,20 +142,12 @@ def load_test_dataset(real_folder, fake_folder, fraction=0.2):
 
 # --- Treinamento do Modelo ---
 def train_and_save_model():
-    # INÍCIO: Captura o tempo antes de começar o processamento
+    # Começa o timer, antes de começar o processamento
     start_time = time.time()
     os.makedirs(SAVE_FOLDER, exist_ok=True) # Precisa estar aqui, para criar a pasta corretamente
 
-    #X, y = load_dataset(folder_true, folder_fake)
     X_train, y_train = load_train_dataset(folder_train_true, folder_train_fake)
     X_test, y_test = load_test_dataset(folder_test_true, folder_test_fake, fraction=0.2)
-
-    #if len(X) == 0:
-    #    return # Para a execução se nenhum arquivo foi carregado
-
-    #X_train, X_test, y_train, y_test = train_test_split(
-    #    X, y, stratify=y, test_size=0.2, random_state=42 # antes, era 0.5
-    #)
 
     # Normalização dos dados
     scaler = StandardScaler()
@@ -180,12 +170,10 @@ def train_and_save_model():
     recall = recall_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred)
 
-    # FIM: Captura o tempo final e calcula a duração
+    # Captura o tempo final e calcula a duração
     end_time = time.time()
     elapsed_time_sec = end_time - start_time # Tempo total em segundos
-
-    # CÁLCULO E FORMATAÇÃO DO TEMPO
-    minutes = int(elapsed_time_sec // 60)
+    minutes = int(elapsed_time_sec // 60) # formata em mm:ss
     seconds = int(elapsed_time_sec % 60)
 
     # Formatação da string de tempo
@@ -230,12 +218,12 @@ def train_and_save_model():
     print("💾 Curva ROC salva como curva_roc_logreg.png")
     plt.show()
 
-    # Salvar modelo + scaler
+    # Salva modelo + scaler
     joblib.dump(clf, "logreg_model.pkl")
     joblib.dump(scaler, "scaler_logreg.pkl")
     print("\n💾 Modelo e scaler salvos como 'logreg_model.pkl' e 'scaler_logreg.pkl'.")
 
-    # Visualização
+    # Visualização original
     plt.figure(figsize=(8, 5))
     plt.hist(y_prob[y_test == 0], bins=15, alpha=0.6, label="Real (label=0)")
     plt.hist(y_prob[y_test == 1], bins=15, alpha=0.6, label="Fake (label=1)")
@@ -250,5 +238,4 @@ def train_and_save_model():
 
 # Execução (main)
 if __name__ == "__main__":
-    # 1. Treina o modelo
     train_and_save_model()
