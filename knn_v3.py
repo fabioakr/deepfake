@@ -1,5 +1,6 @@
 """
-Esta versão utiliza KNN com todas as amostras de teste
+Esta versão utiliza KNN com 20% das amostras de teste, para se adequar ao CNN e SVM.
+
 """
 
 import os
@@ -44,17 +45,23 @@ def _process_folder(root_folder, label):
     features_list = []
     labels_list = []
 
-    for dirpath, dirnames, filenames in os.walk(root_folder):
-        for filename in filenames:
-            if filename.lower().endswith(".wav"):
-                filepath = os.path.join(dirpath, filename)
-                print(f"Abrindo arquivo: {filepath}")
-                try:
-                    features = extract_features(filepath) 
-                    features_list.append(features)
-                    labels_list.append(label)
-                except Exception as e:
-                    print(f"⚠️ Erro ao processar o arquivo {filepath}: {e}")
+    if isinstance(root_folder, list):  # lista de arquivos já coletados
+        file_list = root_folder
+    else:  # caminho de pasta
+        file_list = []
+        for dirpath, _, filenames in os.walk(root_folder):
+            for f in filenames:
+                if f.lower().endswith(".wav"):
+                    file_list.append(os.path.join(dirpath, f))
+
+    for filepath in file_list:
+        print(f"Abrindo arquivo: {filepath}")
+        try:
+            features = extract_features(filepath)
+            features_list.append(features)
+            labels_list.append(label)
+        except Exception as e:
+            print(f"⚠️ Erro ao processar o arquivo {filepath}: {e}")
 
     return features_list, labels_list
 
@@ -73,9 +80,27 @@ def load_manual_dataset(real_train, fake_train, real_test, fake_test):
     X_rt, y_rt = _process_folder(real_train, 0)
     X_ft, y_ft = _process_folder(fake_train, 1)
 
-    print("\nCarregando dados de teste...")
-    X_rv, y_rv = _process_folder(real_test, 0)
-    X_fv, y_fv = _process_folder(fake_test, 1)
+    print("\nCarregando dados de teste... (apenas 20% sorteados)")
+
+    # Coleta todos os arquivos das pastas de teste
+    def collect_files(folder):
+        paths = []
+        for dirpath, _, filenames in os.walk(folder):
+            for f in filenames:
+                if f.lower().endswith(".wav"):
+                    paths.append(os.path.join(dirpath, f))
+        return paths
+
+    real_files = collect_files(real_test)
+    fake_files = collect_files(fake_test)
+
+    # Sorteia apenas 20% dos arquivos
+    real_train_part, real_test_part = train_test_split(real_files, test_size=0.2, random_state=42)
+    fake_train_part, fake_test_part = train_test_split(fake_files, test_size=0.2, random_state=42)
+
+    # Processa somente as amostras sorteadas
+    X_rv, y_rv = _process_folder(real_test_part, 0)
+    X_fv, y_fv = _process_folder(fake_test_part, 1)
 
     X_train = np.array(X_rt + X_ft)
     y_train = np.array(y_rt + y_ft)
