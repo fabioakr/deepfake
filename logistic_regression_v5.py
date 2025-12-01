@@ -33,7 +33,7 @@ folder_test_fake = "/Users/fabioakira/Downloads/fakes_test"
 SAVE_FOLDER = "logistic_regression_results"
 
 # --- Parâmetros de Áudio (AJUSTE AQUI) ---
-N_MFCC = 40       # <<-- AQUI: Número de coeficientes MFCC desejado
+N_MFCC = 5       # <<-- AQUI: Número de coeficientes MFCC desejado
 TARGET_SR = 16000 # <<-- AQUI: Sample rate alvo (ex: 16000). Use None para usar o original.
 
 ## Notes: 1. Primeiro, tentei fazer o código com sample rate original dos áudios, assim como n_mfcc =13.
