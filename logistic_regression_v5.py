@@ -20,6 +20,8 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 from sklearn.metrics import classification_report
 import seaborn as sns
 from sklearn.metrics import ConfusionMatrixDisplay, RocCurveDisplay
+import scipy.fft
+import soundfile as sf
 
 # --- Configurações ---
 folder_train_true = "/Users/fabioakira/Downloads/reais_train"
@@ -62,7 +64,7 @@ def _process_folder(root_folder, label):
                 try:
                     # Extrai as features do arquivo
                     # A função extract_features usará os valores globais N_MFCC e TARGET_SR
-                    features = extract_mfcc(filepath)
+                    features = extract_mfcc(filepath) ## MUDE AQUI ENTRE LFCC E MFCC
                     features_list.append(features)
                     labels_list.append(label)
                 except Exception as e:
@@ -287,8 +289,8 @@ def train_and_save_model():
     plt.show()
 
     # Salva modelo + scaler
-    joblib.dump(clf, "logreg_model.pkl")
-    joblib.dump(scaler, "scaler_logreg.pkl")
+    joblib.dump(clf, os.path.join(SAVE_FOLDER, "logreg_model.pkl"))
+    joblib.dump(scaler, os.path.join(SAVE_FOLDER, "scaler_logreg.pkl"))
     print("\n💾 Modelo e scaler salvos como 'logreg_model.pkl' e 'scaler_logreg.pkl'.")
 
     # Visualização original
