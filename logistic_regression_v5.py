@@ -64,7 +64,7 @@ def _process_folder(root_folder, label):
                 try:
                     # Extrai as features do arquivo
                     # A função extract_features usará os valores globais N_MFCC e TARGET_SR
-                    features = extract_mfcc(filepath) ## MUDE AQUI ENTRE LFCC E MFCC E CQCC
+                    features = extract_cqcc(filepath) ## MUDE AQUI ENTRE LFCC E MFCC E CQCC
                     features_list.append(features)
                     labels_list.append(label)
                 except Exception as e:
@@ -134,7 +134,7 @@ def linear_filter_banks(sr, n_fft, n_filters, fmin=0, fmax=None):
     return fbanks
 
 def extract_lfcc(path, sr=TARGET_SR, n_lfcc=N_MFCC): ### FUSAO DE EXTRACT_LFCC E EXTRACT_LFCC_MEAN
-    wave = load_audio(path)
+    wave = load_audio2(path)
 
     # STFT → power spectrum
     S = np.abs(librosa.stft(wave, n_fft=512, hop_length=160, win_length=400))**2
@@ -164,7 +164,8 @@ def extract_cqcc(path, sr=TARGET_SR, n_cqcc=N_MFCC, bins_per_octave=96):
     CQCC = DCT(log(CQT^2))
     CQT → log-power → DCT → coeficientes
     """
-    wave = load_audio(path)
+    #wave = load_audio(path)
+    wave = load_audio2(path)
 
     # 1) CQT complex
     CQT = librosa.cqt(
@@ -315,7 +316,7 @@ def train_and_save_model():
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
         xticklabels=["Real","Fake"],
         yticklabels=["Real","Fake"])
-    plt.title(f"Confusion Matrix - LogReg, MFCC={N_MFCC}")
+    plt.title(f"Confusion Matrix - LogReg, CQCC={N_MFCC}")
     plt.xlabel("Predicted")
     plt.ylabel("True")
     plt.savefig(os.path.join(SAVE_FOLDER, "matriz_confusao_logreg.png"), dpi=300)
@@ -327,7 +328,7 @@ def train_and_save_model():
     ax = plt.gca()
     RocCurveDisplay.from_predictions(y_test, y_prob, ax=ax)
     ax.plot([0,1], [0,1], "--", color="gray", label="Aleatório (AUC=0.5)")
-    plt.title(f"Curva ROC - LogReg, MFCC={N_MFCC}")
+    plt.title(f"Curva ROC - LogReg, CQCC={N_MFCC}")
     plt.xlabel("False Positive Rate")
     plt.ylabel("True Positive Rate")
     plt.savefig(os.path.join(SAVE_FOLDER, "curva_roc_logreg.png"), dpi=300)
@@ -340,17 +341,17 @@ def train_and_save_model():
     print("\n💾 Modelo e scaler salvos como 'logreg_model.pkl' e 'scaler_logreg.pkl'.")
 
     # Visualização original
-    plt.figure(figsize=(8, 5))
-    plt.hist(y_prob[y_test == 0], bins=15, alpha=0.6, label="Real (label=0)")
-    plt.hist(y_prob[y_test == 1], bins=15, alpha=0.6, label="Fake (label=1)")
-    plt.axvline(0.5, color="k", linestyle="--", label="Decision boundary (0.5)")
-    plt.xlabel("Probabilidade Prevista de ser Falso")
-    plt.ylabel("Número de Amostras")
-    plt.title(f"Regressão Logística (MFCCs={N_MFCC}) – Separação de Probabilidade")
-    plt.legend()
-    plt.grid(True, linestyle="--", alpha=0.4)
-    plt.tight_layout()
-    plt.show()
+    #plt.figure(figsize=(8, 5))
+    #plt.hist(y_prob[y_test == 0], bins=15, alpha=0.6, label="Real (label=0)")
+    #plt.hist(y_prob[y_test == 1], bins=15, alpha=0.6, label="Fake (label=1)")
+    #plt.axvline(0.5, color="k", linestyle="--", label="Decision boundary (0.5)")
+    #plt.xlabel("Probabilidade Prevista de ser Falso")
+    #plt.ylabel("Número de Amostras")
+    #plt.title(f"Regressão Logística (MFCCs={N_MFCC}) – Separação de Probabilidade")
+    #plt.legend()
+    #plt.grid(True, linestyle="--", alpha=0.4)
+    #plt.tight_layout()
+    #plt.show()
 
 # Execução (main)
 if __name__ == "__main__":
