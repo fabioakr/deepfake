@@ -325,7 +325,11 @@ def train_and_save_model():
 
     # Gera o gráfico: curva ROC
     plt.figure(figsize=(6,5))
+    # Set major ticks every 0.2 on both axes
     ax = plt.gca()
+    ax.set_xticks(np.arange(0, 1.01, 0.2))
+    ax.set_yticks(np.arange(0, 1.01, 0.2))
+    ax.grid(which="both", color="lightgray", linestyle="--", linewidth=0.5)
     RocCurveDisplay.from_predictions(y_test, y_prob, ax=ax)
     ax.plot([0,1], [0,1], "--", color="gray", label="Aleatório (AUC=0.5)")
     plt.title(f"Curva ROC - LogReg, CQCC={N_MFCC}")
@@ -339,19 +343,6 @@ def train_and_save_model():
     joblib.dump(clf, os.path.join(SAVE_FOLDER, "logreg_model.pkl"))
     joblib.dump(scaler, os.path.join(SAVE_FOLDER, "scaler_logreg.pkl"))
     print("\n💾 Modelo e scaler salvos como 'logreg_model.pkl' e 'scaler_logreg.pkl'.")
-
-    # Visualização original
-    #plt.figure(figsize=(8, 5))
-    #plt.hist(y_prob[y_test == 0], bins=15, alpha=0.6, label="Real (label=0)")
-    #plt.hist(y_prob[y_test == 1], bins=15, alpha=0.6, label="Fake (label=1)")
-    #plt.axvline(0.5, color="k", linestyle="--", label="Decision boundary (0.5)")
-    #plt.xlabel("Probabilidade Prevista de ser Falso")
-    #plt.ylabel("Número de Amostras")
-    #plt.title(f"Regressão Logística (MFCCs={N_MFCC}) – Separação de Probabilidade")
-    #plt.legend()
-    #plt.grid(True, linestyle="--", alpha=0.4)
-    #plt.tight_layout()
-    #plt.show()
 
 # Execução (main)
 if __name__ == "__main__":

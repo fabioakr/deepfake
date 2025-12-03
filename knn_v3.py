@@ -245,7 +245,11 @@ def train_and_save_model():
 
     # Gera o gráfico: curva ROC
     plt.figure(figsize=(6,5))
+    # Set major ticks every 0.2 on both axes
     ax = plt.gca()
+    ax.set_xticks(np.arange(0, 1.01, 0.2))
+    ax.set_yticks(np.arange(0, 1.01, 0.2))
+    ax.grid(which="both", color="lightgray", linestyle="--", linewidth=0.5)
     RocCurveDisplay.from_predictions(y_test, y_prob, ax=ax)
     ax.plot([0,1], [0,1], "--", color="gray", label="Aleatório (AUC=0.5)")
     plt.title("Curva ROC - KNN, MFCC")
@@ -259,19 +263,6 @@ def train_and_save_model():
     joblib.dump(clf, os.path.join(SAVE_FOLDER, "knn_model.pkl"))
     joblib.dump(scaler, os.path.join(SAVE_FOLDER, "scaler_knn.pkl"))
     print("💾 Modelo KNN salvo como 'knn_model.pkl' e scaler 'scaler_knn.pkl'.")
-
-    # Visualização da distribuição de probabilidades
-    plt.figure(figsize=(8, 5))
-    plt.hist(y_prob[y_test == 0], bins=15, alpha=0.6, label="Real (0)")
-    plt.hist(y_prob[y_test == 1], bins=15, alpha=0.6, label="Fake (1)")
-    plt.axvline(0.5, color="k", linestyle="--", label="Limite (0.5)")
-    plt.xlabel("Probabilidade Prevista de ser Falso")
-    plt.ylabel("Quantidade")
-    plt.title(f"KNN - Distribuição de Probabilidade (K={N_VIZINHOS})")
-    plt.legend()
-    plt.grid(True, linestyle="--", alpha=0.4)
-    plt.tight_layout()
-    plt.show()
 
 # Execução (main)
 if __name__ == "__main__":
