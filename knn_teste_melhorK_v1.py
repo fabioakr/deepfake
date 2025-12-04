@@ -50,7 +50,7 @@ def _process_folder(root_folder, label):
 
     for filepath in file_list:
         try:
-            features = extract_lfcc(filepath)  # pode trocar para LFCC se quiser
+            features = extract_mfcc(filepath)  # pode trocar para LFCC se quiser
             features_list.append(features)
             labels_list.append(label)
         except Exception as e:
@@ -218,7 +218,7 @@ def train_and_select_best_k():
     ks, accs = zip(*resultados)
     plt.figure(figsize=(6,4))
     plt.plot(ks, accs, marker='o')
-    plt.title("Desempenho por valor de K")
+    plt.title("KNN, MFCC - Desempenho por valor de K")
     plt.xlabel("K")
     plt.ylabel("Accuracy")
     plt.grid(True)
