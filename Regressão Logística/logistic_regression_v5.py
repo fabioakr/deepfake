@@ -12,14 +12,13 @@ import librosa
 import matplotlib.pyplot as plt
 import joblib
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
 from sklearn.utils import shuffle
 from sklearn.metrics import precision_score, recall_score, f1_score
 from sklearn.metrics import classification_report
 import seaborn as sns
-from sklearn.metrics import ConfusionMatrixDisplay, RocCurveDisplay
+from sklearn.metrics import RocCurveDisplay
 import scipy.fft
 import soundfile as sf
 
