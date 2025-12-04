@@ -16,7 +16,7 @@ import joblib
 from sklearn.neighbors import KNeighborsClassifier 
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
-from sklearn.metrics import ConfusionMatrixDisplay, RocCurveDisplay
+from sklearn.metrics import RocCurveDisplay
 from sklearn.metrics import precision_score, recall_score, f1_score
 from sklearn.metrics import classification_report
 import seaborn as sns
