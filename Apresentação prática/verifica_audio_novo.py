@@ -58,7 +58,7 @@ wav_files = [
 
 def extract_mfcc(filepath, n_mfcc=N_MFCC):
     """
-    Extrai a média e o desvio padrão dos MFCCs (mesma lógica do knn_v3.py).
+    Extrai a média e o desvio padrão dos MFCCs.
     """
     y, sr = librosa.load(filepath, sr=TARGET_SR)
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
