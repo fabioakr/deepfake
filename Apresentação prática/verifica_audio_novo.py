@@ -35,10 +35,11 @@ import soundfile as sf
 import scipy
 import matplotlib.pyplot as plt
 
-# --- Configurações (mesmas do treino) ---
+# Ajuste: Número de coeficientes a serem extraídos e sample rate alvo
 N_MFCC = 40
-TARGET_SR = 16000
+TARGET_SR = 16000 # Sampling rate em Hz
 
+# Ajuste: Coloque as pastas dos modelos treinados aqui, com path completo
 MODEL_FOLDERS = [
     "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/KNN/knn_results_mfcc",
     "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/KNN/knn_results_cqcc",
@@ -48,18 +49,17 @@ MODEL_FOLDERS = [
     "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/Regressão Logística/logistic_regression_results_lfcc40"
 ]
 
+# Ajuste: Coloque os arquivos .wav a serem testados aqui, com path completo
 wav_files = [
     "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/audio_original.wav",
     "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/audio_fake.wav"
     ]
 
-#input_path = "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake"
-
-
 def extract_mfcc(filepath, n_mfcc=N_MFCC):
     """
-    Extrai a média e o desvio padrão dos MFCCs.
+    Extrai a média e o desvio padrão dos MFCCs para um arquivo de áudio.
     """
+
     y, sr = librosa.load(filepath, sr=TARGET_SR)
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
     feat_mean = np.mean(mfcc, axis=1)
@@ -68,6 +68,9 @@ def extract_mfcc(filepath, n_mfcc=N_MFCC):
 
 def extract_cqcc(path, sr=TARGET_SR, n_cqcc=N_MFCC, bins_per_octave=96):
     """
+    Extrai a média e o desvio padrão dos CQCCs para um arquivo de áudio.
+    Utiliza a biblioteca Librosa para extração do áudio.
+
     CQCC = DCT(log(CQT^2))
     CQT → log-power → DCT → coeficientes
     """
@@ -103,10 +106,18 @@ def extract_cqcc(path, sr=TARGET_SR, n_cqcc=N_MFCC, bins_per_octave=96):
     return np.concatenate([feat_mean, feat_std])
 
 def load_audio2(path, sr=TARGET_SR):
+    """
+    Carrega o áudio do caminho especificado e faz o resample, se preciso.
+    Aqui, utiliza a biblioteca Librosa para leitura.
+    """
     y, _ = librosa.load(path, sr=sr)
     return y
 
 def load_audio(path, sr=TARGET_SR):
+    """
+    Carrega o áudio do caminho especificado e faz o resample, se preciso.
+    Aqui, utiliza a biblioteca soundfile para leitura.
+    """
     wav, fs = sf.read(path)
     if wav.ndim > 1:
         wav = np.mean(wav, axis=1)
@@ -115,6 +126,11 @@ def load_audio(path, sr=TARGET_SR):
     return wav.astype(np.float32)
 
 def linear_filter_banks(sr, n_fft, n_filters, fmin=0, fmax=None):
+    """
+    Gera bancos de filtros triangulares lineares, utilizados para o LFCC, 
+    na função extract_lfcc().
+    """
+
     if fmax is None:
         fmax = sr / 2
 
@@ -140,7 +156,12 @@ def linear_filter_banks(sr, n_fft, n_filters, fmin=0, fmax=None):
 
     return fbanks
 
-def extract_lfcc(path, sr=TARGET_SR, n_lfcc=N_MFCC): ### FUSAO DE EXTRACT_LFCC E EXTRACT_LFCC_MEAN
+def extract_lfcc(path, sr=TARGET_SR, n_lfcc=N_MFCC):
+    """
+    Extrai a média e o desvio padrão dos LFCCs para um arquivo de áudio.
+    Utiliza bancos de filtros lineares, implementados na função linear_filter_banks().
+    """
+
     wave = load_audio(path)
 
     # STFT → power spectrum
@@ -163,6 +184,7 @@ def extract_lfcc(path, sr=TARGET_SR, n_lfcc=N_MFCC): ### FUSAO DE EXTRACT_LFCC E
 
     return np.concatenate([feat_mean, feat_std])
 
+# Ajuste: Diz ao script qual função usar para cada modelo
 FEATURE_EXTRACTORS = {
     "knn_results_mfcc": extract_mfcc,
     "knn_results_cqcc": extract_cqcc,
@@ -172,6 +194,7 @@ FEATURE_EXTRACTORS = {
     "logistic_regression_results_lfcc40": extract_lfcc
 }
 
+# Ajuste: Rótulos amigáveis para os modelos, para exibir nos gráficos
 MODEL_LABELS = {
     "knn_results_mfcc": "KNN (MFCC)",
     "knn_results_cqcc": "KNN (CQCC)",
@@ -186,7 +209,11 @@ MODEL_LABELS = {
 # ============================================================
 
 def load_model_and_scalers():
-    """Carrega múltiplos modelos KNN e scalers de cada subpasta."""
+    """
+    Carrega múltiplos modelos KNN e scalers, abrindo
+    um par de cada subpasta (que representa um treinamento
+    com modelo diferente).
+    """
     models = []
     for folder in MODEL_FOLDERS:
         folder_name = os.path.basename(folder)
@@ -221,7 +248,6 @@ def classify_file(filepath, clf, scaler, feature_fn):
         label (int): 0 ou 1
         prob_fake (float): probabilidade de ser Fake (classe 1)
     """
-    #features = extract_mfcc(filepath)   # MESMA feature do treino
     features = feature_fn(filepath)   # MESMA feature do treino
     X = features.reshape(1, -1)         # 1 amostra, n_features
     X_scaled = scaler.transform(X)
@@ -233,7 +259,12 @@ def classify_file(filepath, clf, scaler, feature_fn):
     return int(y_pred), prob_fake
 
 def collect_wav_files(path):
-    """Se path for pasta, percorre recursivamente; se for arquivo, retorna só ele."""
+    """
+    Abre os arquivos .wav que serão testados.
+
+    Se path for pasta, percorre recursivamente; 
+    se for arquivo, retorna só ele.
+    """
     if os.path.isfile(path):
         if path.lower().endswith(".wav"):
             return [path]
@@ -258,6 +289,7 @@ def main():
         print("Nenhum arquivo .wav encontrado.")
         sys.exit(1)
 
+    # Imprime resultado de cada arquivo de áudio
     print(f"\nEncontrados {len(wav_files)} arquivo(s) .wav.\n")
     for wav_path in wav_files:
         print(f"\nArquivo: {wav_path}")
@@ -276,6 +308,7 @@ def main():
                 print(f"  ⚠️ Erro no modelo '{folder}': {e}")
         print("-" * 60)
 
+    # Gera gráficos de barras para cada arquivo de áudio
     for wav_path, model_probs in results.items():
         models_list = [MODEL_LABELS[m] for m in model_probs.keys()]
         probs = list(model_probs.values())
@@ -288,7 +321,7 @@ def main():
         plt.tight_layout()
         plt.show()
 
-    # --- Gerar uma única imagem com todas as tabelas ---
+    # Gera única imagem com todas as tabelas
     fig, axes = plt.subplots(len(results), 1, figsize=(8, 2.5 * len(results)))
     if len(results) == 1:
         axes = [axes]

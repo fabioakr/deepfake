@@ -51,7 +51,8 @@ from TTS.api import TTS
 ###  (original e fake). Caso deseje, mude os nomes entre aspas.       ###
 ###  FS altera a frequência de amostragem dos dois arquivos, mas      ###
 ###  já estão ajustados para 16 [kHz], padrão usado neste trabalho.   ###
-###  Por fim, a variável TEXTO é o discurso proferido no áudio fake.  ##############################
+###  Por fim, a variável TEXTO é o discurso a ser proferido no        ###
+###  áudio fake.                                                      ##############################
 AUDIO_REF = "audio_original.wav"
 AUDIO_FAKE = "audio_fake.wav"
 FS = 16000
@@ -80,6 +81,7 @@ except:
     pass
 """
 
+# Aceita os termos de uso da Coqui TTS, mandatórios para utilização da biblioteca
 os.environ["COQUI_TOS_AGREED"] = "1"
 
 def gravar_audio(duracao=12):
@@ -102,8 +104,8 @@ def gravar_audio(duracao=12):
 
 def gerar_fake(texto):
     """
-    Lê o arquivo de áudio de referência (AUDIO_REF), também recebe o discurso na variável
-    e gera um áudio falso (AUDIO_FAKE)
+    Lê o arquivo de áudio de referência (AUDIO_REF), também recebe o discurso 
+    na variável e gera um áudio falso (AUDIO_FAKE) com o modelo do XTTS v2.
     """
 
     print("\n--- GERANDO FAKE ---")

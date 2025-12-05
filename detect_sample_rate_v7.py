@@ -15,15 +15,11 @@ import librosa
 import numpy as np
 
 # Localização das pastas, com áudios reais / gerados artificialmente
-############   MUDE OS CAMINHOS AQUI, ANTES DE RODAR   #############
 folder_true = "/Users/fabioakira/Downloads/reais"
 folder_fake = "/Users/fabioakira/Downloads/fakes"
-############   MUDE OS CAMINHOS AQUI, ANTES DE RODAR   #############
 
 # A variável abaixo controla se o programa imprime detalhes de cada arquivo lido
-################################################################################
 verboseMode = False
-################################################################################
 
 # Função auxiliar para imprimir estatísticas de duração e tamanho
 def print_summary_stats(label, durations_sec, sizes_bytes):
@@ -110,13 +106,6 @@ def load_audios_and_check_properties(folder_path, label_name=""):
     """
     Carrega individualmente cada arquivo .wav na pasta informada 
     e retorna suas propriedades (SR, canais, duração, tamanho).
-    
-    Retorna:
-        set {unique_sample_rates},
-        set {unique_channel_counts},
-        list [all_durations_in_seconds],
-        list [all_file_sizes_in_bytes],
-        int total_file_count
     """
 
     properties = []
@@ -179,15 +168,15 @@ if __name__ == "__main__":
     print("#### RELATÓRIO FINAL: SUMÁRIO DE PROPRIEDADES DAS BASES ####")
     print("#"*60)
 
-    # 1. Sumário / Compatibilidade dos Áudios Reais
+    # Sumário / Compatibilidade dos Áudios Reais
     print_compatibility_stats("áudios reais", srs_true, chs_true, count_true)
     print_summary_stats("áudios reais", durs_true, sizes_true)
 
-    # 2. Sumário / Compatibilidade dos Áudios Artificiais
+    # Sumário / Compatibilidade dos Áudios Artificiais
     print_compatibility_stats("áudios artificais", srs_fake, chs_fake, count_fake)
     print_summary_stats("áudios artificiais", durs_fake, sizes_fake)
 
-    # 3. Sumário / Compatibilidade Consolidada
+    # Sumário / Compatibilidade Consolidada
     combined_durs = durs_true + durs_fake
     combined_sizes = sizes_true + sizes_fake
     combined_srs = srs_true.union(srs_fake)

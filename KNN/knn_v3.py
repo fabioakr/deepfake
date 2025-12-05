@@ -1,8 +1,33 @@
 """
-Esta versão utiliza KNN com 20% das amostras de teste, para se adequar ao CNN e SVM.
+Este script treina um classificador de KNN (K-Nearest Neighbors) com 
+a função KNeighborsClassifier do scikit-learn, para detectar áudios 
+falsos gerados por modelos de TTS.
 
-As funções auxiliares load_audio(), linear_filter_banks() e extract_lfcc() são exclusivas
-para a extração de LFCC.
+Alunos:
+Fábio Akira Yonamine - 11805398
+Maria Monique de Menezes Cavalcanti - 11807935
+
+Uma vez que o treinamento com CNN e SVM foi realizado com menos amostras 
+do que a base completa, para que rodasse em tempo hábil, também aplicamos
+essa restrição aqui. As amostras de treinamento correspondem às pastas 
+das pessoas com letras iniciais entre A e M, enquanto as amostras de 
+teste são as pastas de N a Z. Caso deseje mudar a base de treino/teste, 
+altere as variáveis folder_train_true, folder_train_fake, folder_test_true 
+e folder_test_fake, abaixo.
+
+Neste script, não foi necessário instalar nenhuma biblioteca em versão antiga,
+então não houve necessidade de criar um ambiente virtual (.venv). Entretanto,
+se for utilizar este script em conjunto com o verifica_audio_novo.py, é preciso
+que a mesma versão dessa biblioteca seja usada, para que o resultado seja 
+compatível.
+
+Para alternar entre o uso de MFCC, LFCC e CQCC, mude a função chamada dentro
+da função _process_folder(), na linha marcada com "MUDE AQUI ENTRE LFCC, MFCC 
+E CQCC":
+extract_mfcc()  → MFCC
+extract_lfcc()  → LFCC
+extract_cqcc()  → CQCC
+
 """
 
 import os
@@ -11,8 +36,6 @@ import numpy as np
 import librosa
 import matplotlib.pyplot as plt
 import joblib
-
-# Importações específicas do KNN
 from sklearn.neighbors import KNeighborsClassifier 
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
@@ -24,22 +47,21 @@ from sklearn.model_selection import train_test_split
 import scipy.fft
 import soundfile as sf
 
-# --- Configurações ---
+# Ajuste: Localização das pastas, com áudios reais / gerados artificialmente
 folder_train_true = "/Users/fabioakira/Downloads/reais_train"
 folder_train_fake = "/Users/fabioakira/Downloads/fakes_train"
 folder_test_true = "/Users/fabioakira/Downloads/reais_test"
 folder_test_fake = "/Users/fabioakira/Downloads/fakes_test"
 
-# Pasta para salvar resultados
+# Ajuste: Pasta para salvar resultados
 SAVE_FOLDER = "knn_results"
-#os.makedirs(SAVE_FOLDER, exist_ok=True)
 
-# Parâmetros de ML (Ajuste para KNN)
-N_VIZINHOS = 5    # Número de vizinhos (K) para o KNN
+# Ajuste: Número de vizinhos (K) para o KNN
+N_VIZINHOS = 5
 
-# Parâmetros de Áudio
-N_MFCC = 40       # Número de coeficientes MFCC
-TARGET_SR = 16000 # Sample rate alvo (16000 Hz)
+# Ajuste: Parâmetros de Áudio
+N_MFCC = 40       # Número de coeficientes a serem extraídos
+TARGET_SR = 16000 # Sample rate alvo para ajuste, em Hz
 
 def _process_folder(root_folder, label):
     """
@@ -61,7 +83,7 @@ def _process_folder(root_folder, label):
     for filepath in file_list:
         print(f"Abrindo arquivo: {filepath}")
         try:
-            features = extract_mfcc(filepath) ## MUDE AQUI ENTRE LFCC E MFCC
+            features = extract_mfcc(filepath) ## MUDE AQUI ENTRE LFCC, MFCC E CQCC
             features_list.append(features)
             labels_list.append(label)
         except Exception as e:
@@ -71,7 +93,7 @@ def _process_folder(root_folder, label):
 
 def extract_mfcc(filepath, n_mfcc=N_MFCC):
     """
-    Extrai a média e o desvio padrão dos MFCCs.
+    Extrai a média e o desvio padrão dos MFCCs para um arquivo de áudio.
     """
     y, sr = librosa.load(filepath, sr=TARGET_SR)
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
@@ -79,11 +101,11 @@ def extract_mfcc(filepath, n_mfcc=N_MFCC):
     feat_std = np.std(mfcc, axis=1)
     return np.concatenate([feat_mean, feat_std])
 
-# ---------------------------------------
-# 2. Função para extrair LFCC completo
-# ---------------------------------------
-
 def load_audio(path, sr=TARGET_SR):
+    """
+    Carrega o áudio do caminho especificado e faz o resample, se preciso.
+    Aqui, utiliza a biblioteca soundfile para leitura.
+    """
     wav, fs = sf.read(path)
     if wav.ndim > 1:
         wav = np.mean(wav, axis=1)
@@ -92,6 +114,10 @@ def load_audio(path, sr=TARGET_SR):
     return wav.astype(np.float32)
 
 def linear_filter_banks(sr, n_fft, n_filters, fmin=0, fmax=None):
+    """
+    Gera bancos de filtros triangulares lineares, utilizados para o LFCC, 
+    na função extract_lfcc().
+    """
     if fmax is None:
         fmax = sr / 2
 
@@ -117,7 +143,11 @@ def linear_filter_banks(sr, n_fft, n_filters, fmin=0, fmax=None):
 
     return fbanks
 
-def extract_lfcc(path, sr=TARGET_SR, n_lfcc=N_MFCC): ### FUSAO DE EXTRACT_LFCC E EXTRACT_LFCC_MEAN
+def extract_lfcc(path, sr=TARGET_SR, n_lfcc=N_MFCC):
+    """
+    Extrai a média e o desvio padrão dos LFCCs para um arquivo de áudio.
+    Utiliza bancos de filtros lineares, implementados na função linear_filter_banks().
+    """
     wave = load_audio(path)
 
     # STFT → power spectrum
@@ -142,10 +172,13 @@ def extract_lfcc(path, sr=TARGET_SR, n_lfcc=N_MFCC): ### FUSAO DE EXTRACT_LFCC E
 
 def extract_cqcc(path, sr=TARGET_SR, n_cqcc=N_MFCC, bins_per_octave=96):
     """
+    Extrai a média e o desvio padrão dos CQCCs para um arquivo de áudio.
+    Utiliza a biblioteca Librosa para extração do áudio.
+
     CQCC = DCT(log(CQT^2))
     CQT → log-power → DCT → coeficientes
     """
-    #wave = load_audio(path)
+
     wave = load_audio2(path)
 
     # 1) CQT complex
@@ -177,6 +210,10 @@ def extract_cqcc(path, sr=TARGET_SR, n_cqcc=N_MFCC, bins_per_octave=96):
     return np.concatenate([feat_mean, feat_std])
 
 def load_audio2(path, sr=TARGET_SR):
+    """
+    Carrega o áudio do caminho especificado e faz o resample, se preciso.
+    Aqui, utiliza a biblioteca Librosa para leitura.
+    """
     y, _ = librosa.load(path, sr=sr)
     return y
 
@@ -220,6 +257,7 @@ def train_and_save_model():
     start_time = time.time()
     os.makedirs(SAVE_FOLDER, exist_ok=True) # Precisa estar aqui, para criar a pasta corretamente
 
+    # Abre as bases de treino e teste
     X_train, y_train, X_test, y_test = load_manual_dataset(
         folder_train_true, folder_train_fake,
         folder_test_true, folder_test_fake
@@ -242,18 +280,17 @@ def train_and_save_model():
     y_prob = clf.predict_proba(X_test_scaled)[:, 1]
     y_pred = (y_prob >= 0.5).astype(int)
 
+    # Gera as métricas numéricas para printar no terminal
     acc = accuracy_score(y_test, y_pred)
     auc = roc_auc_score(y_test, y_prob)
     cm = confusion_matrix(y_test, y_pred)
-
     precision = precision_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred)
 
+    # Captura o tempo final e calcula a duração
     end_time = time.time()
     elapsed_time_sec = end_time - start_time
-
-    # Tempo gasto para o script rodar
     minutes = int(elapsed_time_sec // 60)
     seconds = int(elapsed_time_sec % 60)
     time_display = f"{minutes} min {seconds} seg" if minutes > 0 else f"{elapsed_time_sec:.2f} seg"
