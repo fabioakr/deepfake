@@ -31,9 +31,9 @@ N_MFCC = 40
 TARGET_SR = 16000
 
 MODEL_FOLDERS = [
+    "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/KNN/knn_results_mfcc",
     "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/KNN/knn_results_cqcc",
-    "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/KNN/knn_results_lfcc",
-    "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/KNN/knn_results_mfcc"
+    "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/KNN/knn_results_lfcc"
 ]
 
 wav_files = [
@@ -54,8 +54,46 @@ def extract_mfcc(filepath, n_mfcc=N_MFCC):
     feat_std = np.std(mfcc, axis=1)
     return np.concatenate([feat_mean, feat_std])
 
+def extract_cqcc(path, sr=TARGET_SR, n_cqcc=N_MFCC, bins_per_octave=96):
+    """
+    CQCC = DCT(log(CQT^2))
+    CQT → log-power → DCT → coeficientes
+    """
+    #wave = load_audio(path)
+    wave = load_audio2(path)
 
-# (Opcional) Se quiser usar LFCC no futuro, pode reaproveitar do knn_v3.py:
+    # 1) CQT complex
+    CQT = librosa.cqt(
+        wave,
+        sr=sr,
+        hop_length=128,
+        fmin=20,
+        n_bins=8 * bins_per_octave,
+        bins_per_octave=bins_per_octave,
+        pad_mode="reflect"     # evita janelas curtas
+    )
+
+    # 2) Espectro de potência
+    power = np.abs(CQT)**2
+
+    # 3) Log-power
+    log_power = np.log(power + 1e-12)
+
+    # 4) DCT → cepstrum
+    cqcc = scipy.fft.dct(log_power, axis=0, norm='ortho')
+
+    # 5) Mantém primeiros coeficientes
+    cqcc = cqcc[:n_cqcc, :]
+
+    feat_mean = np.mean(cqcc, axis=1)
+    feat_std = np.std(cqcc, axis=1)
+
+    return np.concatenate([feat_mean, feat_std])
+
+def load_audio2(path, sr=TARGET_SR):
+    y, _ = librosa.load(path, sr=sr)
+    return y
+
 def load_audio(path, sr=TARGET_SR):
     wav, fs = sf.read(path)
     if wav.ndim > 1:
@@ -63,6 +101,55 @@ def load_audio(path, sr=TARGET_SR):
     if fs != sr:
         wav = librosa.resample(wav.astype(np.float32), orig_sr=fs, target_sr=sr)
     return wav.astype(np.float32)
+
+def linear_filter_banks(sr, n_fft, n_filters, fmin=0, fmax=None):
+    if fmax is None:
+        fmax = sr / 2
+
+    # Frequências reais geradas pela FFT
+    freqs = np.linspace(0, sr / 2, 1 + n_fft // 2)
+
+    # Bordas das bandas lineares
+    edges = np.linspace(fmin, fmax, n_filters + 2)
+
+    fbanks = np.zeros((n_filters, len(freqs)))
+
+    for i in range(n_filters):
+        left = edges[i]
+        center = edges[i + 1]
+        right = edges[i + 2]
+
+        # Subida triangular
+        left_slope = (freqs - left) / (center - left)
+        # Descida triangular
+        right_slope = (right - freqs) / (right - center)
+
+        fbanks[i] = np.maximum(0, np.minimum(left_slope, right_slope))
+
+    return fbanks
+
+def extract_lfcc(path, sr=TARGET_SR, n_lfcc=N_MFCC): ### FUSAO DE EXTRACT_LFCC E EXTRACT_LFCC_MEAN
+    wave = load_audio(path)
+
+    # STFT → power spectrum
+    S = np.abs(librosa.stft(wave, n_fft=512, hop_length=160, win_length=400))**2
+
+    # Filtros triangulares lineares
+    fbanks = linear_filter_banks(sr=sr, n_fft=512, n_filters=n_lfcc)
+
+    # Aplica os filtros → espectro filtrado
+    filtered = np.dot(fbanks, S)
+
+    # log-energy
+    logS = np.log(filtered + 1e-10)
+
+    # Cepstrum via DCT
+    lfcc = scipy.fft.dct(logS, axis=0, norm="ortho")
+
+    feat_mean = np.mean(lfcc, axis=1)
+    feat_std = np.std(lfcc, axis=1)
+
+    return np.concatenate([feat_mean, feat_std])
 
 # ============================================================
 # Funções de inferência
