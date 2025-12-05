@@ -26,6 +26,7 @@ import librosa
 import joblib
 import soundfile as sf
 import scipy
+import matplotlib.pyplot as plt
 
 # --- Configurações (mesmas do treino) ---
 N_MFCC = 40
@@ -164,6 +165,15 @@ FEATURE_EXTRACTORS = {
     "logistic_regression_results_lfcc40": extract_lfcc
 }
 
+MODEL_LABELS = {
+    "knn_results_mfcc": "KNN (MFCC)",
+    "knn_results_cqcc": "KNN (CQCC)",
+    "knn_results_lfcc": "KNN (LFCC)",
+    "logistic_regression_results_mfcc40": "LogReg (MFCC)",
+    "logistic_regression_results_cqcc40": "LogReg (CQCC)",
+    "logistic_regression_results_lfcc40": "LogReg (LFCC)"
+}
+
 # ============================================================
 # Funções de inferência
 # ============================================================
@@ -235,6 +245,7 @@ def collect_wav_files(path):
 def main():
     # Carrega modelos e scalers
     models = load_model_and_scalers()
+    results = {}
 
     if not wav_files:
         print("Nenhum arquivo .wav encontrado.")
@@ -243,9 +254,9 @@ def main():
     print(f"\nEncontrados {len(wav_files)} arquivo(s) .wav.\n")
     for wav_path in wav_files:
         print(f"\nArquivo: {wav_path}")
+        results[wav_path] = {}
         for folder, clf, scaler in models:
             try:
-                #label, prob_fake = classify_file(wav_path, clf, scaler)
                 model_name = os.path.basename(folder)
                 feature_fn = FEATURE_EXTRACTORS[model_name]
                 label, prob_fake = classify_file(wav_path, clf, scaler, feature_fn)
@@ -253,10 +264,42 @@ def main():
                 print(f"  Modelo: {folder}")
                 print(f"    → Predição: {label_str} (classe {label})")
                 print(f"    → Probabilidade de ser Fake: {prob_fake:.3f}")
+                results[wav_path][model_name] = prob_fake
             except Exception as e:
                 print(f"  ⚠️ Erro no modelo '{folder}': {e}")
         print("-" * 60)
 
+    for wav_path, model_probs in results.items():
+        models_list = [MODEL_LABELS[m] for m in model_probs.keys()]
+        probs = list(model_probs.values())
+        plt.figure(figsize=(10,4))
+        plt.bar(models_list, probs)
+        plt.title(f"Probabilidade de ser Fake - {os.path.basename(wav_path)}")
+        plt.ylabel("Probabilidade")
+        plt.ylim(0, 1)
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+        plt.show()
+
+        # --- Gerar tabela como imagem ---
+        fig, ax = plt.subplots(figsize=(8, 1 + len(models_list)*0.3))
+        ax.axis('off')
+        table_data = [["Modelo", "Probabilidade Fake"]] + list(zip(models_list, [f"{p*100:.1f}%" for p in probs]))
+        table = ax.table(cellText=table_data, loc='center', cellLoc='center')
+        table.auto_set_font_size(False)
+        table.set_fontsize(10)
+        table.scale(1, 1.5)
+
+        # Colorir as probabilidades
+        for i, prob in enumerate(probs, start=1):
+            if prob >= 0.5:
+                table[(i, 1)].set_facecolor('#FF7F7F')  # vermelho claro
+            else:
+                table[(i, 1)].set_facecolor('#90EE90')  # verde claro
+
+        plt.title(f"Tabela de Resultados - {os.path.basename(wav_path)}")
+        plt.tight_layout()
+        plt.show()
 
 if __name__ == "__main__":
     main()
