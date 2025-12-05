@@ -32,8 +32,14 @@ Para mais informações sobre a biblioteca TTS, acesse:
 https://github.com/coqui-ai/TTS/tree/dev#installation
 """
 
-###  Importação de bibliotecas  ###
+###  Os avisos são suprimidos para evitar poluição no output do programa.  ###
+###  Eles surgem por estarmos utilizando comandos em estado "deprecated",  ###
+###  mas que ainda funcionam para nossos propósitos.                       ###
 import warnings
+warnings.filterwarnings("ignore", message="torch.utils._pytree._register_pytree_node is deprecated")
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated as an API")
+
+###  Importação de bibliotecas  ###
 import os
 import torch
 import sounddevice as sd
@@ -55,16 +61,11 @@ TEXTO = (
 )
 ####################################################################################################
 
-###  Os avisos são suprimidos para evitar poluição no output do programa.  ###
-###  Eles surgem por estarmos utilizando comandos em estado "deprecated",  ###
-###  mas que ainda funcionam para nossos propósitos.                       ###
-warnings.filterwarnings("ignore", message="torch.utils._pytree._register_pytree_node is deprecated")
-warnings.filterwarnings("ignore", message="pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html")
-warnings.filterwarnings("ignore", category=UserWarning)
 
 # ==========================================
 # CORREÇÃO PARA PYTORCH 2.6+ (Weights Only)
 # ==========================================
+"""
 try:
     if hasattr(torch, 'load'):
         _original_load = torch.load
@@ -77,6 +78,7 @@ try:
         torch.load = _safe_load
 except:
     pass
+"""
 
 os.environ["COQUI_TOS_AGREED"] = "1"
 
