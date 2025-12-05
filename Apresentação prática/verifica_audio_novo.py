@@ -1,22 +1,29 @@
 """
-Script de inferência para o modelo KNN treinado em knn_v3.py.
+Este script será utilizado durante a apresentação prática do TCC, 
+verificando se os áudios real e fake gerados ao vivo, anteriormente,
+são detectados corretamente pelos modelos treinados, a partir dos 
+arquivos de extensão .pkl salvos. Ao fim, ele gera uma tabela com 
+as probabilidades de cada áudio ser fake, segundo cada modelo.
 
-Usa os arquivos:
-- knn_results/knn_model.pkl
-- knn_results/scaler_knn.pkl
+Alunos:
+Fábio Akira Yonamine - 11805398
+Maria Monique de Menezes Cavalcanti - 11807935
 
-Entrada:
-    - Caminho para 1 arquivo .wav
-    - OU caminho para uma pasta contendo vários .wav (procura recursivamente)
+Como os modelos foram treinados utilizando scikit-learn na versão 1.6.1,
+sugerimos criar um ambiente virtual (.venv), utilizando obrigatoriamente
+essa versão da biblioteca. Caso outra versão mais nova do scikit-learn 
+seja usada, o Terminal emite um warning, dizendo que os resultados podem
+não ser conclusivos. A versão do Python utilizada nesse venv é 3.13.7.
 
-Exemplos de uso:
+COMANDOS PARA CRIAR E ATIVAR .VENV NO TERMINAL (MAC OS):
+python3.13 -m venv .venv
+source .venv/bin/activate
 
-    python knn_predict.py /caminho/para/arquivo.wav
-    python knn_predict.py /caminho/para/pasta_com_audios
-
-
+COMANDOS PARA INSTALAR A DEPENDÊNCIA NO .VENV:
 pip install scikit-learn==1.6.1
-Precisa ser essa versão!!!!
+
+COMANDOS PARA RODAR O SCRIPT:
+python3 verifica_audio_novo.py
 """
 
 import os
@@ -46,7 +53,7 @@ wav_files = [
     "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/audio_fake.wav"
     ]
 
-input_path = "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake"
+#input_path = "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake"
 
 
 def extract_mfcc(filepath, n_mfcc=N_MFCC):
@@ -281,25 +288,29 @@ def main():
         plt.tight_layout()
         plt.show()
 
-        # --- Gerar tabela como imagem ---
-        fig, ax = plt.subplots(figsize=(8, 1 + len(models_list)*0.3))
+    # --- Gerar uma única imagem com todas as tabelas ---
+    fig, axes = plt.subplots(len(results), 1, figsize=(8, 2.5 * len(results)))
+    if len(results) == 1:
+        axes = [axes]
+
+    for ax, (wav_path, model_probs) in zip(axes, results.items()):
         ax.axis('off')
+        models_list = [MODEL_LABELS[m] for m in model_probs.keys()]
+        probs = list(model_probs.values())
         table_data = [["Modelo", "Probabilidade Fake"]] + list(zip(models_list, [f"{p*100:.1f}%" for p in probs]))
         table = ax.table(cellText=table_data, loc='center', cellLoc='center')
         table.auto_set_font_size(False)
         table.set_fontsize(10)
-        table.scale(1, 1.5)
-
-        # Colorir as probabilidades
+        table.scale(1, 1.4)
         for i, prob in enumerate(probs, start=1):
             if prob >= 0.5:
-                table[(i, 1)].set_facecolor('#FF7F7F')  # vermelho claro
+                table[(i, 1)].set_facecolor('#FF7F7F')
             else:
-                table[(i, 1)].set_facecolor('#90EE90')  # verde claro
+                table[(i, 1)].set_facecolor('#90EE90')
+        ax.set_title(f"Teste - {os.path.basename(wav_path)}")
 
-        plt.title(f"Tabela de Resultados - {os.path.basename(wav_path)}")
-        plt.tight_layout()
-        plt.show()
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == "__main__":
     main()
