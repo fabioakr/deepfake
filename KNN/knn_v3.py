@@ -140,6 +140,45 @@ def extract_lfcc(path, sr=TARGET_SR, n_lfcc=N_MFCC): ### FUSAO DE EXTRACT_LFCC E
 
     return np.concatenate([feat_mean, feat_std])
 
+def extract_cqcc(path, sr=TARGET_SR, n_cqcc=N_MFCC, bins_per_octave=96):
+    """
+    CQCC = DCT(log(CQT^2))
+    CQT → log-power → DCT → coeficientes
+    """
+    #wave = load_audio(path)
+    wave = load_audio2(path)
+
+    # 1) CQT complex
+    CQT = librosa.cqt(
+        wave,
+        sr=sr,
+        hop_length=128,
+        fmin=20,
+        n_bins=8 * bins_per_octave,
+        bins_per_octave=bins_per_octave,
+        pad_mode="reflect"     # evita janelas curtas
+    )
+
+    # 2) Espectro de potência
+    power = np.abs(CQT)**2
+
+    # 3) Log-power
+    log_power = np.log(power + 1e-12)
+
+    # 4) DCT → cepstrum
+    cqcc = scipy.fft.dct(log_power, axis=0, norm='ortho')
+
+    # 5) Mantém primeiros coeficientes
+    cqcc = cqcc[:n_cqcc, :]
+
+    feat_mean = np.mean(cqcc, axis=1)
+    feat_std = np.std(cqcc, axis=1)
+
+    return np.concatenate([feat_mean, feat_std])
+
+def load_audio2(path, sr=TARGET_SR):
+    y, _ = librosa.load(path, sr=sr)
+    return y
 
 def load_manual_dataset(real_train, fake_train, real_test, fake_test):
     print("Carregando dados de treino...")
