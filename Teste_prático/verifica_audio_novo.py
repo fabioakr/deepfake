@@ -25,6 +25,7 @@ import numpy as np
 import librosa
 import joblib
 import soundfile as sf
+import scipy
 
 # --- Configurações (mesmas do treino) ---
 N_MFCC = 40
@@ -33,7 +34,10 @@ TARGET_SR = 16000
 MODEL_FOLDERS = [
     "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/KNN/knn_results_mfcc",
     "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/KNN/knn_results_cqcc",
-    "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/KNN/knn_results_lfcc"
+    "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/KNN/knn_results_lfcc",
+    "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/Regressão Logística/logistic_regression_results_mfcc40",
+    "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/Regressão Logística/logistic_regression_results_cqcc40",
+    "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/Regressão Logística/logistic_regression_results_lfcc40"
 ]
 
 wav_files = [
@@ -151,6 +155,15 @@ def extract_lfcc(path, sr=TARGET_SR, n_lfcc=N_MFCC): ### FUSAO DE EXTRACT_LFCC E
 
     return np.concatenate([feat_mean, feat_std])
 
+FEATURE_EXTRACTORS = {
+    "knn_results_mfcc": extract_mfcc,
+    "knn_results_cqcc": extract_cqcc,
+    "knn_results_lfcc": extract_lfcc,
+    "logistic_regression_results_mfcc40": extract_mfcc,
+    "logistic_regression_results_cqcc40": extract_cqcc,
+    "logistic_regression_results_lfcc40": extract_lfcc
+}
+
 # ============================================================
 # Funções de inferência
 # ============================================================
@@ -159,8 +172,19 @@ def load_model_and_scalers():
     """Carrega múltiplos modelos KNN e scalers de cada subpasta."""
     models = []
     for folder in MODEL_FOLDERS:
-        model_path = os.path.join(folder, "knn_model.pkl")
-        scaler_path = os.path.join(folder, "scaler_knn.pkl")
+        folder_name = os.path.basename(folder)
+
+        if folder_name.startswith("knn_"):
+            model_file = "knn_model.pkl"
+            scaler_file = "scaler_knn.pkl"
+        elif folder_name.startswith("lr_") or folder_name.startswith("logistic_regression_"):
+            model_file = "logreg_model.pkl"
+            scaler_file = "scaler_logreg.pkl"
+        else:
+            raise ValueError(f"Não sei qual modelo usar para a pasta: {folder_name}")
+
+        model_path = os.path.join(folder, model_file)
+        scaler_path = os.path.join(folder, scaler_file)
 
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Modelo não encontrado em: {model_path}")
@@ -172,7 +196,7 @@ def load_model_and_scalers():
         models.append((folder, clf, scaler))
     return models
 
-def classify_file(filepath, clf, scaler):
+def classify_file(filepath, clf, scaler, feature_fn):
     """
     Classifica um único arquivo .wav como Real (0) ou Fake (1).
 
@@ -180,7 +204,8 @@ def classify_file(filepath, clf, scaler):
         label (int): 0 ou 1
         prob_fake (float): probabilidade de ser Fake (classe 1)
     """
-    features = extract_mfcc(filepath)   # MESMA feature do treino
+    #features = extract_mfcc(filepath)   # MESMA feature do treino
+    features = feature_fn(filepath)   # MESMA feature do treino
     X = features.reshape(1, -1)         # 1 amostra, n_features
     X_scaled = scaler.transform(X)
 
@@ -220,7 +245,10 @@ def main():
         print(f"\nArquivo: {wav_path}")
         for folder, clf, scaler in models:
             try:
-                label, prob_fake = classify_file(wav_path, clf, scaler)
+                #label, prob_fake = classify_file(wav_path, clf, scaler)
+                model_name = os.path.basename(folder)
+                feature_fn = FEATURE_EXTRACTORS[model_name]
+                label, prob_fake = classify_file(wav_path, clf, scaler, feature_fn)
                 label_str = "Real" if label == 0 else "Fake"
                 print(f"  Modelo: {folder}")
                 print(f"    → Predição: {label_str} (classe {label})")
