@@ -20,6 +20,9 @@ python3.13 -m venv .venv
 source .venv/bin/activate
 
 COMANDOS PARA INSTALAR A DEPENDÊNCIA NO .VENV:
+pip install --upgrade pip
+pip install matplotlib
+pip install librosa
 pip install scikit-learn==1.6.1
 
 COMANDOS PARA RODAR O SCRIPT:
