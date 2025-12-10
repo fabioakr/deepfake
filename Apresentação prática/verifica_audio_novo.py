@@ -11,7 +11,7 @@ Maria Monique de Menezes Cavalcanti - 11807935
 
 Como os modelos foram treinados utilizando scikit-learn na versão 1.6.1,
 sugerimos criar um ambiente virtual (.venv), utilizando obrigatoriamente
-essa versão da biblioteca. Caso outra versão mais nova do scikit-learn 
+essa versão da biblioteca. Caso outra versão mais nova do scikit-learn
 seja usada, o Terminal emite um warning, dizendo que os resultados podem
 não ser conclusivos. A versão do Python utilizada nesse venv é 3.13.7.
 
@@ -54,8 +54,10 @@ MODEL_FOLDERS = [
 
 # Ajuste: Coloque os arquivos .wav a serem testados aqui, com path completo
 wav_files = [
-    "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/audio_original.wav",
-    "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/audio_fake.wav"
+    "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/wallace1_real.wav",
+    "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/wallace1_fake.wav",
+    "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/dilma_real.wav",
+    "/Users/fabioakira/Desktop/POLI/TCC/deepfake/deepfake/dilma_fake.wav"
     ]
 
 def extract_mfcc(filepath, n_mfcc=N_MFCC):
@@ -312,6 +314,7 @@ def main():
         print("-" * 60)
 
     # Gera gráficos de barras para cada arquivo de áudio
+    '''
     for wav_path, model_probs in results.items():
         models_list = [MODEL_LABELS[m] for m in model_probs.keys()]
         probs = list(model_probs.values())
@@ -323,6 +326,7 @@ def main():
         plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
         plt.show()
+    '''
 
     # Gera única imagem com todas as tabelas
     fig, axes = plt.subplots(len(results), 1, figsize=(8, 2.5 * len(results)))

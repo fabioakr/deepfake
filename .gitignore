@@ -1,4 +1,10 @@
 .venv/
 audio_fake.wav
 audio_original.wav
+dilma_fake.wav
+dilma_real.wav
+patricia1_fake.wav
+patricia1_real.wav
+wallace1_fake.wav
+wallace1_real.wav
 .DS_Store

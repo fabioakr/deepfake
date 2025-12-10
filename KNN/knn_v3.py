@@ -181,7 +181,7 @@ def extract_cqcc(path, sr=TARGET_SR, n_cqcc=N_MFCC, bins_per_octave=96):
 
     wave = load_audio2(path)
 
-    # 1) CQT complex
+    # 1) CQT complex - transformada constante Q
     CQT = librosa.cqt(
         wave,
         sr=sr,
